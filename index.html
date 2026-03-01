@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SDN Keyword Video Controller</title>
+  <title>SDN Scanner</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: Arial; text-align: center; margin-top: 40px; }
-    video { margin-top: 20px; }
-    button, select { margin: 5px; padding: 8px; }
+    body { text-align:center; font-family: Arial; }
+    video { margin-top:20px; }
+    button, select { padding:8px; margin:5px; }
   </style>
 </head>
 <body>
 
-<h2>SDN Topic Detector</h2>
+<h2>Scan SDN Page</h2>
 
-<input type="text" id="userInput" placeholder="Type topic here..." size="50">
-<button onclick="checkTopic()">Detect Topic</button>
+<video id="camera" width="300" autoplay></video>
+<br>
+<button onclick="captureAndScan()">Scan Page</button>
 
 <br><br>
 
@@ -22,7 +24,6 @@
 </video>
 
 <br>
-
 <button onclick="playVideo()">Play</button>
 <button onclick="pauseVideo()">Pause</button>
 <button onclick="forward10()">+10s</button>
@@ -36,55 +37,46 @@
 
 <script>
 
-// 🎯 STRONG KEYWORD GROUPING
+// 🎥 Start Camera
+const camera = document.getElementById("camera");
+
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+.then(stream => {
+  camera.srcObject = stream;
+});
+
+// 🎯 Strong Keyword Grouping
 const topics = {
   sdn_controller: {
-    keywords: [
-      "sdn",
-      "controller",
-      "northbound",
-      "southbound",
-      "openflow",
-      "flow management",
-      "topology",
-      "device discovery",
-      "network device",
-      "control plane"
-    ],
+    keywords: ["sdn", "controller", "northbound", "southbound", "openflow", "flow management", "topology", "device discovery"],
     video: "sdn_controller.mp4"
-  },
-
-  flow_management: {
-    keywords: [
-      "flow",
-      "flow table",
-      "flow management",
-      "packet",
-      "database",
-      "synchronization"
-    ],
-    video: "flow_video.mp4"
-  },
-
-  topology: {
-    keywords: [
-      "topology",
-      "interconnection",
-      "network topology",
-      "router",
-      "switch",
-      "wireless access point"
-    ],
-    video: "topology_video.mp4"
   }
 };
 
 const videoPlayer = document.getElementById("videoPlayer");
 const videoSource = document.getElementById("videoSource");
 
-function checkTopic() {
+function captureAndScan() {
 
-  let text = document.getElementById("userInput").value.toLowerCase().trim();
+  const canvas = document.createElement("canvas");
+  canvas.width = camera.videoWidth;
+  canvas.height = camera.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(camera, 0, 0);
+
+  Tesseract.recognize(canvas, 'eng')
+  .then(result => {
+
+    let text = result.data.text.toLowerCase();
+    console.log("Scanned Text:", text);
+
+    detectTopic(text);
+
+  });
+}
+
+function detectTopic(text) {
 
   let detectedTopic = null;
   let highestMatch = 0;
@@ -99,7 +91,6 @@ function checkTopic() {
       }
     });
 
-    // 🔥 STRONG THRESHOLD RULE
     if (matchCount >= 3 && matchCount > highestMatch) {
       highestMatch = matchCount;
       detectedTopic = topic;
@@ -110,29 +101,17 @@ function checkTopic() {
     videoSource.src = topics[detectedTopic].video;
     videoPlayer.load();
     videoPlayer.play();
-    alert("Detected: " + detectedTopic);
+    alert("SDN Topic Detected!");
   } else {
-    alert("No strong topic match detected");
+    alert("No strong match detected.");
   }
 }
 
 // 🎮 Video Controls
-
-function playVideo() {
-  videoPlayer.play();
-}
-
-function pauseVideo() {
-  videoPlayer.pause();
-}
-
-function forward10() {
-  videoPlayer.currentTime += 10;
-}
-
-function changeSpeed(speed) {
-  videoPlayer.playbackRate = speed;
-}
+function playVideo() { videoPlayer.play(); }
+function pauseVideo() { videoPlayer.pause(); }
+function forward10() { videoPlayer.currentTime += 10; }
+function changeSpeed(speed) { videoPlayer.playbackRate = speed; }
 
 </script>
 
