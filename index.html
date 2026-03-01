@@ -11,7 +11,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 #camera{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;}
 #ocr-canvas{display:none;}
 
-/* Scan box */
 #scan-box{
   position:fixed;top:50%;left:50%;
   transform:translate(-50%,-55%);
@@ -31,7 +30,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 }
 @keyframes sw{0%{top:0}50%{top:calc(100% - 2px)}100%{top:0}}
 
-/* Bottom UI */
 #bottom-ui{
   position:fixed;bottom:0;left:0;right:0;z-index:20;
   padding:12px 16px 24px;
@@ -53,8 +51,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 }
 #status.found{border-color:#00e676;color:#00e676;}
 #status.reading{border-color:#ff9800;color:#ff9800;}
+#status.warn{border-color:#ff5722;color:#ff5722;}
 
-/* Top label */
 #top-label{
   position:fixed;top:16px;left:0;right:0;z-index:20;
   text-align:center;pointer-events:none;
@@ -66,7 +64,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   letter-spacing:0.5px;
 }
 
-/* Loading */
+/* Confidence bar */
+#conf-bar-wrap{
+  width:200px;height:5px;background:rgba(255,255,255,0.1);
+  border-radius:3px;overflow:hidden;
+}
+#conf-bar{height:100%;width:0%;border-radius:3px;transition:width 0.4s,background 0.4s;}
+
 #loading{
   position:fixed;inset:0;background:#000;z-index:9999;
   display:flex;flex-direction:column;align-items:center;
@@ -78,31 +82,85 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 #lbar{height:100%;width:0%;background:linear-gradient(90deg,#4facfe,#00e676);border-radius:4px;transition:width 0.5s;}
 #lmsg{color:#aaa;font-size:0.8rem;min-height:18px;}
 
-/* Video player */
+/* ── Video player ── */
 #vscreen{
   display:none;position:fixed;inset:0;background:#000;z-index:100;
   flex-direction:column;align-items:center;justify-content:center;
 }
-#mvid{width:100%;height:100%;object-fit:contain;}
-#vclose{
+#mvid{width:100%;flex:1;object-fit:contain;min-height:0;}
+
+/* Controls bar */
+#controls{
+  width:100%;background:rgba(0,0,0,0.92);padding:10px 16px 22px;
+  display:flex;flex-direction:column;gap:10px;
+  border-top:1px solid rgba(255,255,255,0.08);
+}
+
+/* Progress */
+#progress-wrap{
+  width:100%;height:28px;display:flex;align-items:center;gap:0;
+  cursor:pointer;position:relative;
+}
+#progress-bg{
+  flex:1;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;
+  position:relative;overflow:visible;
+}
+#progress-fill{
+  height:100%;background:linear-gradient(90deg,#4facfe,#00e676);
+  border-radius:2px;width:0%;transition:width 0.3s linear;pointer-events:none;
+}
+#progress-thumb{
+  position:absolute;top:50%;right:0;transform:translate(50%,-50%);
+  width:14px;height:14px;background:#fff;border-radius:50%;
+  box-shadow:0 0 6px rgba(79,172,254,0.8);pointer-events:none;
+}
+#time-display{font-size:0.72rem;color:#aaa;white-space:nowrap;min-width:80px;text-align:right;}
+
+/* Buttons row */
+#btn-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.ctrl-btn{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  color:#fff;border-radius:12px;padding:8px 14px;
+  font-size:0.8rem;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;gap:5px;flex:1;justify-content:center;
+}
+.ctrl-btn:active{background:rgba(79,172,254,0.25);border-color:#4facfe;}
+#btn-playpause{flex:1.4;}
+
+/* Speed selector */
+#speed-btn{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  color:#4facfe;border-radius:12px;padding:8px 12px;
+  font-size:0.8rem;cursor:pointer;white-space:nowrap;
+}
+#speed-menu{
+  display:none;position:fixed;bottom:140px;right:16px;z-index:200;
+  background:#1a1a1a;border:1px solid #333;border-radius:12px;overflow:hidden;
+}
+#speed-menu.open{display:block;}
+.speed-opt{
+  padding:10px 20px;color:#fff;font-size:0.82rem;cursor:pointer;
+  border-bottom:1px solid #2a2a2a;text-align:center;
+}
+.speed-opt:last-child{border:none;}
+.speed-opt:hover,.speed-opt.active{background:rgba(79,172,254,0.2);color:#4facfe;}
+
+/* Top controls */
+#top-controls{
   position:fixed;top:14px;right:14px;z-index:110;
+  display:none;gap:8px;
+}
+#vclose{
   background:rgba(0,0,0,0.8);color:#fff;
   border:2px solid rgba(255,255,255,0.4);
   border-radius:50%;width:42px;height:42px;
   font-size:1.1rem;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;pointer-events:all;
-}
-#vreplay{
-  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:110;
-  background:rgba(0,0,0,0.85);color:#4facfe;
-  border:1.5px solid #4facfe;border-radius:24px;
-  padding:10px 24px;font-size:0.88rem;cursor:pointer;pointer-events:all;
+  display:flex;align-items:center;justify-content:center;
 }
 </style>
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loading">
   <h2>📖 SDN AR Scanner</h2>
   <div id="lbar-wrap"><div id="lbar"></div></div>
@@ -110,21 +168,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   <p>Point your camera at the<br><strong style="color:#fff">SDN Controllers</strong> page<br>in your textbook</p>
 </div>
 
-<!-- Camera -->
 <video id="camera" autoplay playsinline muted></video>
 <canvas id="ocr-canvas"></canvas>
 
-<!-- Top label -->
 <div id="top-label"><span>📖 SDN Controllers — Section 2.5</span></div>
 
-<!-- Scan box -->
 <div id="scan-box">
   <div class="c tl"></div><div class="c tr"></div>
   <div class="c bl"></div><div class="c br"></div>
   <div id="scan-line"></div>
 </div>
 
-<!-- Bottom UI -->
 <div id="bottom-ui">
   <div id="pills">
     <span class="pill" id="p0">End-user Discovery</span>
@@ -134,83 +188,122 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     <span class="pill" id="p4">SDN Controller</span>
     <span class="pill" id="p5">OpenFlow</span>
   </div>
+  <div id="conf-bar-wrap"><div id="conf-bar"></div></div>
   <div id="status">📷 Point camera at textbook page</div>
 </div>
 
-<!-- Video -->
+<!-- Video player -->
 <div id="vscreen">
   <video id="mvid" src="./video.mp4" playsinline webkit-playsinline></video>
+
+  <div id="controls">
+    <!-- Progress bar -->
+    <div id="progress-wrap">
+      <div id="progress-bg">
+        <div id="progress-fill"><div id="progress-thumb"></div></div>
+      </div>
+      <div id="time-display">0:00 / 0:00</div>
+    </div>
+    <!-- Buttons -->
+    <div id="btn-row">
+      <button class="ctrl-btn" onclick="skip(-10)">⏪ 10s</button>
+      <button class="ctrl-btn" id="btn-playpause" onclick="togglePlay()">⏸ Pause</button>
+      <button class="ctrl-btn" onclick="skip(10)">10s ⏩</button>
+      <button id="speed-btn" onclick="toggleSpeedMenu()">1× ▲</button>
+    </div>
+  </div>
+</div>
+
+<!-- Speed menu -->
+<div id="speed-menu">
+  <div class="speed-opt" onclick="setSpeed(0.5)">0.5×</div>
+  <div class="speed-opt" onclick="setSpeed(0.75)">0.75×</div>
+  <div class="speed-opt active" onclick="setSpeed(1)">1×</div>
+  <div class="speed-opt" onclick="setSpeed(1.25)">1.25×</div>
+  <div class="speed-opt" onclick="setSpeed(1.5)">1.5×</div>
+  <div class="speed-opt" onclick="setSpeed(2)">2×</div>
+</div>
+
+<!-- Close button (top right) -->
+<div id="top-controls" style="display:none;position:fixed;top:14px;right:14px;z-index:110;">
   <button id="vclose" onclick="closeVid()">✕</button>
-  <button id="vreplay" onclick="replayVid()">🔁 Replay</button>
 </div>
 
 <script>
-// ── Config ─────────────────────────────────────────────
-// Keywords: detecting ANY 2 of these triggers the video
-const KEYWORDS = [
-  {text:'end-user',   pill:'p0'},
-  {text:'end user',   pill:'p0'},
-  {text:'network device', pill:'p1'},
-  {text:'device discovery', pill:'p1'},
-  {text:'topology',   pill:'p2'},
-  {text:'flow management', pill:'p3'},
-  {text:'sdn controller', pill:'p4'},
-  {text:'sdn',        pill:'p4'},
-  {text:'openflow',   pill:'p5'},
-  {text:'northbound', pill:'p4'},
-  {text:'southbound', pill:'p4'},
+// ══════════════════════════════════════════════════════
+//  STRONGER DETECTION CONFIG
+//  Logic: keyword groups — the page must match keywords
+//  from MULTIPLE different groups, not just random hits.
+//  This prevents false triggers from adjacent topics.
+// ══════════════════════════════════════════════════════
+
+// Each group represents a distinct SDN Controller concept.
+// We require hits from at least REQUIRED_GROUPS different groups.
+const KEYWORD_GROUPS = [
+  { pill:'p4', words:['sdn controller','software defined network','software-defined network'] },
+  { pill:'p5', words:['openflow','open flow'] },
+  { pill:'p3', words:['flow management','flow table','flow entry','flow rule'] },
+  { pill:'p2', words:['topology','network topology','topology management'] },
+  { pill:'p1', words:['network discovery','device discovery','network device'] },
+  { pill:'p0', words:['end-user','end user','host discovery'] },
+  { pill:'p4', words:['northbound','southbound','control plane','data plane'] },
 ];
-const TRIGGER_COUNT = 2; // keywords needed to trigger video
 
-// ── Elements ───────────────────────────────────────────
-const lbar   = document.getElementById('lbar');
-const lmsg   = document.getElementById('lmsg');
-const loading= document.getElementById('loading');
-const status = document.getElementById('status');
-const cam    = document.getElementById('camera');
-const canvas = document.getElementById('ocr-canvas');
-const ctx    = canvas.getContext('2d');
-const vscreen= document.getElementById('vscreen');
-const mvid   = document.getElementById('mvid');
+// Must match keywords from at least this many DIFFERENT groups
+const REQUIRED_GROUPS = 3;
 
-let worker=null, scanLoop=null, busy=false, playing=false, cooldown=false;
+// BONUS: these high-confidence anchors alone count as 2 group hits each
+// (they almost exclusively appear in SDN Controller sections)
+const ANCHOR_WORDS = ['openflow','sdn controller','northbound interface','southbound interface'];
 
-// ── Step 1: Camera ─────────────────────────────────────
+// Consecutive scans that must pass before triggering (debounce)
+const CONFIRM_SCANS = 2;
+
+// ── State ──────────────────────────────────────────────
+let worker=null, busy=false, playing=false, cooldown=false;
+let confirmCount = 0;  // consecutive passing scans
+
+const lbar    = document.getElementById('lbar');
+const lmsg    = document.getElementById('lmsg');
+const loading = document.getElementById('loading');
+const status  = document.getElementById('status');
+const cam     = document.getElementById('camera');
+const canvas  = document.getElementById('ocr-canvas');
+const ctx     = canvas.getContext('2d');
+const vscreen = document.getElementById('vscreen');
+const mvid    = document.getElementById('mvid');
+const confBar = document.getElementById('conf-bar');
+
+// ── Camera ─────────────────────────────────────────────
 async function startCam(){
   lmsg.textContent='Requesting camera...'; lbar.style.width='15%';
   try{
     const stream = await navigator.mediaDevices.getUserMedia({
       video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false
     });
-    cam.srcObject = stream;
+    cam.srcObject=stream;
     await new Promise(r=>{ cam.onloadedmetadata=r; });
     lbar.style.width='35%'; lmsg.textContent='Camera ready ✅';
     return true;
-  }catch(e){
-    lmsg.textContent='❌ Camera error: '+e.message;
-    return false;
-  }
+  }catch(e){ lmsg.textContent='❌ Camera: '+e.message; return false; }
 }
 
-// ── Step 2: Tesseract ──────────────────────────────────
+// ── Tesseract ──────────────────────────────────────────
 async function startOCR(){
   lmsg.textContent='Loading OCR engine...'; lbar.style.width='45%';
   try{
     worker = await Tesseract.createWorker('eng',1,{
       logger:m=>{
         if(m.status==='loading tesseract core'){lbar.style.width='55%';lmsg.textContent='Loading core...';}
-        if(m.status==='loading language traineddata'){lbar.style.width='70%';lmsg.textContent='Loading English data...';}
+        if(m.status==='loading language traineddata'){lbar.style.width='70%';lmsg.textContent='Loading language data...';}
         if(m.status==='initialized api'){lbar.style.width='88%';lmsg.textContent='Almost ready...';}
       }
     });
     await worker.setParameters({tessedit_pageseg_mode:'6'});
     return true;
-  }catch(e){
-    lmsg.textContent='❌ OCR error: '+e.message; return false;
-  }
+  }catch(e){ lmsg.textContent='❌ OCR: '+e.message; return false; }
 }
 
-// ── Init ───────────────────────────────────────────────
 async function init(){
   if(!await startCam()) return;
   if(!await startOCR()) return;
@@ -218,15 +311,13 @@ async function init(){
   setTimeout(()=>{ loading.style.display='none'; startScanning(); }, 700);
 }
 
-// ── Capture & enhance frame ────────────────────────────
+// ── Frame capture & enhance ────────────────────────────
 function capture(){
   const W=cam.videoWidth, H=cam.videoHeight;
   if(!W||!H) return null;
-  // Crop middle 85% width, middle 50% height
   const cx=W*0.075, cy=H*0.20, cw=W*0.85, ch=H*0.50;
   canvas.width=Math.floor(cw); canvas.height=Math.floor(ch);
-  ctx.drawImage(cam, cx,cy,cw,ch, 0,0,cw,ch);
-  // Grayscale + contrast boost for better OCR
+  ctx.drawImage(cam,cx,cy,cw,ch,0,0,cw,ch);
   const id=ctx.getImageData(0,0,canvas.width,canvas.height), d=id.data;
   for(let i=0;i<d.length;i+=4){
     const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
@@ -237,16 +328,24 @@ function capture(){
   return canvas;
 }
 
-// ── Check keywords in OCR text ─────────────────────────
+// ── Stronger keyword check ─────────────────────────────
 function check(text){
-  const lower=text.toLowerCase();
-  const matched=new Set();
-  const litPills=new Set();
+  const lower = text.toLowerCase();
+  const hitGroups = new Set();
+  const litPills  = new Set();
 
-  KEYWORDS.forEach(kw=>{
-    if(lower.includes(kw.text)){
-      matched.add(kw.text);
-      litPills.add(kw.pill);
+  // Check anchor words first — each anchor counts as 2 groups
+  let anchorBonus = 0;
+  ANCHOR_WORDS.forEach(a=>{
+    if(lower.includes(a)) anchorBonus++;
+  });
+
+  // Check all keyword groups
+  KEYWORD_GROUPS.forEach((grp, idx)=>{
+    const hit = grp.words.some(w => lower.includes(w));
+    if(hit){
+      hitGroups.add(idx);
+      litPills.add(grp.pill);
     }
   });
 
@@ -254,12 +353,20 @@ function check(text){
   document.querySelectorAll('.pill').forEach(p=>p.classList.remove('lit'));
   litPills.forEach(id=>{ const el=document.getElementById(id); if(el)el.classList.add('lit'); });
 
-  return matched.size >= TRIGGER_COUNT;
+  // Score: unique groups matched + anchor bonus
+  const score = hitGroups.size + anchorBonus;
+  const pct   = Math.min(100, Math.round((score / REQUIRED_GROUPS) * 100));
+
+  // Update confidence bar
+  confBar.style.width = pct + '%';
+  confBar.style.background = pct >= 100 ? '#00e676' : pct > 50 ? '#ff9800' : '#4facfe';
+
+  return score >= REQUIRED_GROUPS;
 }
 
 // ── Scan loop ──────────────────────────────────────────
 function startScanning(){
-  const run=async()=>{
+  const run = async()=>{
     if(busy||playing||cooldown) return;
     busy=true;
     status.textContent='🔍 Reading text...';
@@ -267,14 +374,23 @@ function startScanning(){
     try{
       const frame=capture();
       if(frame){
-        const res=await worker.recognize(frame);
-        const text=res.data.text;
-        if(check(text)){
-          status.textContent='✅ Page detected!';
-          status.className='found';
-          cooldown=true;
-          setTimeout(playVid, 600);
+        const res  = await worker.recognize(frame);
+        const text = res.data.text;
+        const pass = check(text);
+
+        if(pass){
+          confirmCount++;
+          if(confirmCount >= CONFIRM_SCANS){
+            status.textContent='✅ SDN Controllers detected!';
+            status.className='found';
+            cooldown=true;
+            setTimeout(playVid, 400);
+          } else {
+            status.textContent=`🔍 Confirming… (${confirmCount}/${CONFIRM_SCANS})`;
+            status.className='reading';
+          }
         } else {
+          confirmCount=0;
           status.textContent='📷 Point camera at textbook page';
           status.className='';
         }
@@ -283,25 +399,95 @@ function startScanning(){
     busy=false;
   };
   run();
-  scanLoop=setInterval(run, 2500);
+  setInterval(run, 2500);
 }
 
-// ── Video ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  VIDEO CONTROLS
+// ══════════════════════════════════════════════════════
+
 function playVid(){
   playing=true;
   vscreen.style.display='flex';
+  document.getElementById('top-controls').style.display='flex';
   mvid.currentTime=0;
   mvid.play().catch(()=>{});
+  updatePlayBtn();
 }
+
 function closeVid(){
   mvid.pause();
   vscreen.style.display='none';
-  playing=false; cooldown=false;
+  document.getElementById('top-controls').style.display='none';
+  playing=false; cooldown=false; confirmCount=0;
   document.querySelectorAll('.pill').forEach(p=>p.classList.remove('lit'));
+  confBar.style.width='0%';
   status.textContent='📷 Point camera at textbook page';
   status.className='';
 }
-function replayVid(){ mvid.currentTime=0; mvid.play().catch(()=>{}); }
+
+function togglePlay(){
+  if(mvid.paused){ mvid.play(); } else { mvid.pause(); }
+  updatePlayBtn();
+}
+
+function updatePlayBtn(){
+  const btn=document.getElementById('btn-playpause');
+  btn.innerHTML = mvid.paused ? '▶ Play' : '⏸ Pause';
+}
+
+function skip(sec){
+  mvid.currentTime = Math.max(0, Math.min(mvid.duration||0, mvid.currentTime+sec));
+}
+
+// Speed
+let currentSpeed = 1;
+function toggleSpeedMenu(){
+  document.getElementById('speed-menu').classList.toggle('open');
+}
+function setSpeed(s){
+  currentSpeed=s;
+  mvid.playbackRate=s;
+  document.getElementById('speed-btn').textContent=s+'× ▲';
+  document.querySelectorAll('.speed-opt').forEach(el=>{
+    el.classList.toggle('active', parseFloat(el.textContent)===s);
+  });
+  document.getElementById('speed-menu').classList.remove('open');
+}
+
+// Progress bar
+function fmtTime(s){
+  if(isNaN(s)||!isFinite(s)) return '0:00';
+  const m=Math.floor(s/60), ss=Math.floor(s%60);
+  return m+':'+(ss<10?'0':'')+ss;
+}
+
+mvid.addEventListener('timeupdate',()=>{
+  const pct = mvid.duration ? (mvid.currentTime/mvid.duration)*100 : 0;
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('time-display').textContent=
+    fmtTime(mvid.currentTime)+' / '+fmtTime(mvid.duration);
+  updatePlayBtn();
+});
+
+mvid.addEventListener('ended',()=>{
+  document.getElementById('btn-playpause').innerHTML='↩ Replay';
+});
+
+// Seek on tap/click of progress bar
+document.getElementById('progress-wrap').addEventListener('click', e=>{
+  const bg=document.getElementById('progress-bg');
+  const rect=bg.getBoundingClientRect();
+  const pct=(e.clientX-rect.left)/rect.width;
+  if(mvid.duration) mvid.currentTime=pct*mvid.duration;
+});
+
+// Close speed menu on outside tap
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#speed-btn') && !e.target.closest('#speed-menu')){
+    document.getElementById('speed-menu').classList.remove('open');
+  }
+});
 
 init();
 </script>
