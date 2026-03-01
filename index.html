@@ -157,6 +157,107 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   font-size:1.1rem;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
 }
+
+/* ── Quiz Screen ── */
+#qscreen{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:linear-gradient(160deg,#0a0a0f 0%,#0d1a2e 100%);
+  flex-direction:column;overflow-y:auto;
+}
+#qinner{
+  min-height:100%;padding:24px 20px 40px;
+  display:flex;flex-direction:column;gap:20px;
+  max-width:480px;margin:0 auto;width:100%;
+}
+#q-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:4px;
+}
+#q-title{color:#4facfe;font-size:1rem;font-weight:700;letter-spacing:0.5px;}
+#q-progress-text{color:#666;font-size:0.78rem;}
+#q-prog-wrap{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
+#q-prog-bar{height:100%;background:linear-gradient(90deg,#4facfe,#00e676);border-radius:2px;transition:width 0.4s;}
+
+.q-card{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;padding:20px;
+  animation:fadeUp 0.35s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.q-num{font-size:0.7rem;color:#555;margin-bottom:8px;letter-spacing:0.5px;text-transform:uppercase;}
+.q-text{font-size:0.95rem;color:#e8e8e8;line-height:1.55;margin-bottom:16px;}
+
+.q-options{display:flex;flex-direction:column;gap:10px;}
+.q-opt{
+  background:rgba(255,255,255,0.05);
+  border:1.5px solid rgba(255,255,255,0.1);
+  border-radius:12px;padding:12px 16px;
+  color:#ccc;font-size:0.875rem;line-height:1.4;
+  cursor:pointer;transition:all 0.2s;text-align:left;
+  display:flex;align-items:flex-start;gap:10px;
+}
+.q-opt:active{transform:scale(0.98);}
+.q-opt .opt-letter{
+  min-width:22px;height:22px;border-radius:6px;
+  background:rgba(255,255,255,0.08);color:#888;
+  font-size:0.72rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  margin-top:1px;
+}
+.q-opt.selected{ border-color:#4facfe; background:rgba(79,172,254,0.12); color:#fff; }
+.q-opt.selected .opt-letter{ background:#4facfe; color:#000; }
+.q-opt.correct{ border-color:#00e676!important; background:rgba(0,230,118,0.12)!important; color:#00e676!important; }
+.q-opt.correct .opt-letter{ background:#00e676!important; color:#000!important; }
+.q-opt.wrong{ border-color:#ff5252!important; background:rgba(255,82,82,0.12)!important; color:#ff5252!important; }
+.q-opt.wrong .opt-letter{ background:#ff5252!important; color:#fff!important; }
+.q-opt.disabled{pointer-events:none;}
+
+.q-feedback{
+  margin-top:12px;padding:10px 14px;border-radius:10px;
+  font-size:0.82rem;line-height:1.5;display:none;
+}
+.q-feedback.show{display:block;}
+.q-feedback.ok{background:rgba(0,230,118,0.1);color:#00e676;border:1px solid rgba(0,230,118,0.2);}
+.q-feedback.bad{background:rgba(255,82,82,0.1);color:#ff8a80;border:1px solid rgba(255,82,82,0.2);}
+
+#q-next-btn{
+  background:linear-gradient(90deg,#4facfe,#00e676);
+  color:#000;font-weight:700;font-size:0.9rem;
+  border:none;border-radius:14px;padding:14px;
+  width:100%;cursor:pointer;display:none;
+  letter-spacing:0.3px;transition:opacity 0.2s;
+}
+#q-next-btn:active{opacity:0.85;}
+
+/* Results screen */
+#q-results{display:none;flex-direction:column;gap:20px;}
+#q-score-ring{
+  width:120px;height:120px;margin:0 auto;
+  position:relative;display:flex;align-items:center;justify-content:center;
+}
+#q-score-ring svg{position:absolute;inset:0;transform:rotate(-90deg);}
+#q-score-ring .ring-bg{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:10;}
+#q-score-ring .ring-fill{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s ease;}
+#q-score-text{text-align:center;z-index:1;}
+#q-score-num{font-size:1.8rem;font-weight:800;color:#fff;}
+#q-score-label{font-size:0.7rem;color:#666;}
+#q-score-msg{text-align:center;font-size:1rem;color:#e8e8e8;font-weight:600;}
+#q-score-sub{text-align:center;font-size:0.8rem;color:#666;line-height:1.5;}
+.q-review-item{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  border-radius:14px;padding:16px;
+}
+.q-review-item .rq{font-size:0.85rem;color:#bbb;margin-bottom:8px;line-height:1.4;}
+.q-review-correct{font-size:0.8rem;color:#00e676;margin-bottom:3px;}
+.q-review-yours{font-size:0.8rem;color:#ff8a80;}
+.q-review-yours.ok{color:#00e676;}
+#q-done-btn{
+  background:rgba(79,172,254,0.15);color:#4facfe;
+  border:1.5px solid #4facfe;border-radius:14px;
+  padding:14px;width:100%;font-size:0.9rem;
+  font-weight:700;cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -227,6 +328,41 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 <!-- Close button (top right) -->
 <div id="top-controls" style="display:none;position:fixed;top:14px;right:14px;z-index:110;">
   <button id="vclose" onclick="closeVid()">✕</button>
+</div>
+
+<!-- Quiz Screen -->
+<div id="qscreen">
+  <div id="qinner">
+    <div id="q-header">
+      <div id="q-title">📝 SDN Controllers Quiz</div>
+      <div id="q-progress-text">1 / 5</div>
+    </div>
+    <div id="q-prog-wrap"><div id="q-prog-bar" style="width:0%"></div></div>
+
+    <!-- Question card (rendered by JS) -->
+    <div id="q-card-wrap"></div>
+
+    <button id="q-next-btn" onclick="nextQuestion()">Next Question →</button>
+
+    <!-- Results (hidden until done) -->
+    <div id="q-results">
+      <div id="q-score-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"
+            stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+        </svg>
+        <div id="q-score-text">
+          <div id="q-score-num">0/5</div>
+          <div id="q-score-label">SCORE</div>
+        </div>
+      </div>
+      <div id="q-score-msg"></div>
+      <div id="q-score-sub"></div>
+      <div id="q-review-wrap"></div>
+      <button id="q-done-btn" onclick="closeQuiz()">↩ Back to Scanner</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -492,6 +628,13 @@ mvid.addEventListener('timeupdate',()=>{
 
 mvid.addEventListener('ended',()=>{
   document.getElementById('btn-playpause').innerHTML='↩ Replay';
+  // Auto-show quiz after short delay
+  setTimeout(()=>{
+    vscreen.style.display='none';
+    document.getElementById('top-controls').style.display='none';
+    playing=false;
+    openQuiz();
+  }, 800);
 });
 
 // Seek on tap/click of progress bar
@@ -508,6 +651,206 @@ document.addEventListener('click', e=>{
     document.getElementById('speed-menu').classList.remove('open');
   }
 });
+
+// ══════════════════════════════════════════════════════
+//  QUIZ SYSTEM
+// ══════════════════════════════════════════════════════
+
+const QUIZ = [
+  {
+    q: "What is the primary role of an SDN Controller in a software-defined network?",
+    opts: [
+      "To physically route packets between switches",
+      "To provide a centralized control plane that manages network devices",
+      "To store routing tables on individual switches",
+      "To replace all hardware in the network with virtual machines"
+    ],
+    answer: 1,
+    explain: "The SDN Controller acts as the centralized 'brain' — it manages the control plane and instructs data plane devices (switches/routers) how to forward traffic."
+  },
+  {
+    q: "What is OpenFlow primarily used for in SDN?",
+    opts: [
+      "A GUI for network administrators",
+      "A protocol for secure file transfers",
+      "A standardized protocol between the SDN controller and network switches",
+      "A replacement for the TCP/IP model"
+    ],
+    answer: 2,
+    explain: "OpenFlow is the southbound interface protocol that allows the SDN controller to communicate with and program the flow tables of underlying network switches."
+  },
+  {
+    q: "Which interface connects the SDN Controller to applications above it?",
+    opts: [
+      "Southbound interface",
+      "Eastbound interface",
+      "Northbound interface",
+      "Westbound interface"
+    ],
+    answer: 2,
+    explain: "The northbound interface connects the SDN Controller to upper-layer applications and business logic, allowing apps to request network services."
+  },
+  {
+    q: "What does 'Flow Management' refer to in the context of SDN Controllers?",
+    opts: [
+      "Managing physical cable connections between devices",
+      "The process of defining and updating rules for how packets are forwarded in the network",
+      "Controlling the speed of data transmission only",
+      "Managing user authentication flows"
+    ],
+    answer: 1,
+    explain: "Flow Management involves the controller creating, updating, and deleting flow entries in switch flow tables to control how different traffic types are handled across the network."
+  },
+  {
+    q: "What is Network Topology Discovery in SDN?",
+    opts: [
+      "Physically mapping cable routes in a data center",
+      "Discovering which users are connected to the internet",
+      "The controller automatically learning the layout and connections of network devices",
+      "Installing new switches into the network"
+    ],
+    answer: 2,
+    explain: "Topology Discovery is when the SDN Controller automatically identifies and maps all devices, links, and their relationships in the network — without manual configuration."
+  }
+];
+
+let qCurrent = 0;
+let qAnswers  = []; // stores index of chosen answer per question
+const LETTERS = ['A','B','C','D'];
+
+function openQuiz(){
+  qCurrent = 0;
+  qAnswers  = [];
+  document.getElementById('q-results').style.display = 'none';
+  document.getElementById('q-card-wrap').style.display = 'block';
+  document.getElementById('q-next-btn').style.display = 'none';
+  document.getElementById('qscreen').style.display = 'flex';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q   = QUIZ[qCurrent];
+  const num = qCurrent + 1;
+  const tot = QUIZ.length;
+
+  document.getElementById('q-progress-text').textContent = `${num} / ${tot}`;
+  document.getElementById('q-prog-bar').style.width = ((num-1)/tot*100)+'%';
+
+  const optsHTML = q.opts.map((o,i)=>`
+    <button class="q-opt" onclick="selectAnswer(${i})">
+      <span class="opt-letter">${LETTERS[i]}</span>
+      <span>${o}</span>
+    </button>
+  `).join('');
+
+  document.getElementById('q-card-wrap').innerHTML = `
+    <div class="q-card">
+      <div class="q-num">Question ${num} of ${tot}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-options">${optsHTML}</div>
+      <div class="q-feedback" id="q-fb"></div>
+    </div>
+  `;
+  document.getElementById('q-next-btn').style.display = 'none';
+}
+
+function selectAnswer(idx){
+  const q    = QUIZ[qCurrent];
+  const opts = document.querySelectorAll('.q-opt');
+  const fb   = document.getElementById('q-fb');
+
+  // Disable all options
+  opts.forEach(o => o.classList.add('disabled'));
+
+  // Mark selected
+  opts[idx].classList.add(idx === q.answer ? 'correct' : 'wrong');
+  if(idx !== q.answer) opts[q.answer].classList.add('correct');
+
+  // Feedback
+  const correct = idx === q.answer;
+  fb.className = 'q-feedback show ' + (correct ? 'ok' : 'bad');
+  fb.innerHTML = correct
+    ? `✅ <strong>Correct!</strong> ${q.explain}`
+    : `❌ <strong>Incorrect.</strong> ${q.explain}`;
+
+  qAnswers[qCurrent] = idx;
+
+  // Show next / finish button
+  const btn = document.getElementById('q-next-btn');
+  btn.style.display = 'block';
+  btn.textContent   = qCurrent < QUIZ.length-1 ? 'Next Question →' : 'See Results 🎉';
+}
+
+function nextQuestion(){
+  qCurrent++;
+  if(qCurrent < QUIZ.length){
+    renderQuestion();
+    // scroll to top of quiz
+    document.getElementById('qinner').scrollTop = 0;
+  } else {
+    showResults();
+  }
+}
+
+function showResults(){
+  document.getElementById('q-card-wrap').style.display  = 'none';
+  document.getElementById('q-next-btn').style.display   = 'none';
+  document.getElementById('q-results').style.display    = 'flex';
+  document.getElementById('q-prog-bar').style.width     = '100%';
+  document.getElementById('q-progress-text').textContent = `Done!`;
+
+  const score = qAnswers.filter((a,i)=> a === QUIZ[i].answer).length;
+  const total = QUIZ.length;
+  const pct   = score / total;
+
+  // Score ring animation
+  const circ = 2 * Math.PI * 52; // 326.7
+  const offset = circ * (1 - pct);
+  const ring = document.getElementById('ring-fill');
+  ring.style.stroke = pct >= 0.8 ? '#00e676' : pct >= 0.6 ? '#ff9800' : '#ff5252';
+  setTimeout(()=>{ ring.style.strokeDashoffset = offset; }, 100);
+
+  document.getElementById('q-score-num').textContent = `${score}/${total}`;
+
+  const msgs = [
+    [1.0, '🏆 Perfect Score!',    'Outstanding! You have mastered SDN Controllers.'],
+    [0.8, '🎉 Excellent!',        'Great understanding of SDN concepts!'],
+    [0.6, '👍 Good Job!',         'Solid grasp — review the missed questions below.'],
+    [0.4, '📖 Keep Studying',     'Re-watch the video and review the answers below.'],
+    [0.0, '💪 Don\'t Give Up!',   'Go back and watch the video again — you\'ve got this!'],
+  ];
+  const [, msg, sub] = msgs.find(([t])=> pct >= t);
+  document.getElementById('q-score-msg').textContent = msg;
+  document.getElementById('q-score-sub').textContent  = sub;
+
+  // Review
+  const reviewHTML = QUIZ.map((q,i)=>{
+    const yours   = qAnswers[i];
+    const correct = q.answer;
+    const ok      = yours === correct;
+    return `
+      <div class="q-review-item">
+        <div class="rq">Q${i+1}: ${q.q}</div>
+        <div class="q-review-correct">✅ Correct: ${LETTERS[correct]}. ${q.opts[correct]}</div>
+        ${!ok ? `<div class="q-review-yours">❌ Your answer: ${LETTERS[yours]}. ${q.opts[yours]}</div>` : `<div class="q-review-yours ok">✔ You got this right!</div>`}
+      </div>
+    `;
+  }).join('');
+  document.getElementById('q-review-wrap').innerHTML = reviewHTML;
+
+  // scroll to top of results
+  setTimeout(()=>{ document.getElementById('qinner').scrollTo(0,0); }, 100);
+}
+
+function closeQuiz(){
+  document.getElementById('qscreen').style.display = 'none';
+  cooldown    = false;
+  confirmCount= 0;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('lit'));
+  confBar.style.width='0%';
+  status.textContent='📷 Point camera at textbook page';
+  status.className='';
+}
 
 init();
 </script>
