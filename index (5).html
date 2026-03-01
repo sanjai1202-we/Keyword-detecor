@@ -147,115 +147,90 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 <script>
 // ── Config ─────────────────────────────────────────────
 // Keywords: detecting ANY 2 of these triggers the video
-const KEYWORDS = [
-  {text:'end-user',   pill:'p0'},
-  {text:'end user',   pill:'p0'},
-  {text:'network device', pill:'p1'},
-  {text:'device discovery', pill:'p1'},
-  {text:'topology',   pill:'p2'},
-  {text:'flow management', pill:'p3'},
-  {text:'sdn controller', pill:'p4'},
-  {text:'sdn',        pill:'p4'},
-  {text:'openflow',   pill:'p5'},
-  {text:'northbound', pill:'p4'},
-  {text:'southbound', pill:'p4'},
-];
-const TRIGGER_COUNT = 2; // keywords needed to trigger video
+// ── Strong Keyword Grouping System ─────────────────────
 
-// ── Elements ───────────────────────────────────────────
-const lbar   = document.getElementById('lbar');
-const lmsg   = document.getElementById('lmsg');
-const loading= document.getElementById('loading');
-const status = document.getElementById('status');
-const cam    = document.getElementById('camera');
-const canvas = document.getElementById('ocr-canvas');
-const ctx    = canvas.getContext('2d');
-const vscreen= document.getElementById('vscreen');
-const mvid   = document.getElementById('mvid');
+// Grouped by topic (minimum 3 matches required)
+const TOPIC_GROUP = {
+  sdn_controller: {
+    keywords: [
+      "sdn",
+      "sdn controller",
+      "northbound",
+      "southbound",
+      "openflow",
+      "control plane"
+    ],
+    threshold: 3
+  },
 
-let worker=null, scanLoop=null, busy=false, playing=false, cooldown=false;
+  discovery: {
+    keywords: [
+      "end-user",
+      "end user",
+      "device discovery",
+      "network device",
+      "laptops",
+      "routers",
+      "switches"
+    ],
+    threshold: 3
+  },
 
-// ── Step 1: Camera ─────────────────────────────────────
-async function startCam(){
-  lmsg.textContent='Requesting camera...'; lbar.style.width='15%';
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false
-    });
-    cam.srcObject = stream;
-    await new Promise(r=>{ cam.onloadedmetadata=r; });
-    lbar.style.width='35%'; lmsg.textContent='Camera ready ✅';
-    return true;
-  }catch(e){
-    lmsg.textContent='❌ Camera error: '+e.message;
-    return false;
+  topology_flow: {
+    keywords: [
+      "topology",
+      "interconnection",
+      "flow management",
+      "flow entries",
+      "database",
+      "synchronization"
+    ],
+    threshold: 3
   }
-}
+};
 
-// ── Step 2: Tesseract ──────────────────────────────────
-async function startOCR(){
-  lmsg.textContent='Loading OCR engine...'; lbar.style.width='45%';
-  try{
-    worker = await Tesseract.createWorker('eng',1,{
-      logger:m=>{
-        if(m.status==='loading tesseract core'){lbar.style.width='55%';lmsg.textContent='Loading core...';}
-        if(m.status==='loading language traineddata'){lbar.style.width='70%';lmsg.textContent='Loading English data...';}
-        if(m.status==='initialized api'){lbar.style.width='88%';lmsg.textContent='Almost ready...';}
+function check(text){
+
+  const lower = text.toLowerCase();
+
+  let detected = false;
+  let bestMatchCount = 0;
+  let bestPills = [];
+
+  for(let topic in TOPIC_GROUP){
+
+    let matchCount = 0;
+    let tempPills = [];
+
+    TOPIC_GROUP[topic].keywords.forEach(word=>{
+      if(lower.includes(word)){
+        matchCount++;
       }
     });
-    await worker.setParameters({tessedit_pageseg_mode:'6'});
-    return true;
-  }catch(e){
-    lmsg.textContent='❌ OCR error: '+e.message; return false;
-  }
-}
 
-// ── Init ───────────────────────────────────────────────
-async function init(){
-  if(!await startCam()) return;
-  if(!await startOCR()) return;
-  lbar.style.width='100%'; lmsg.textContent='✅ Ready!';
-  setTimeout(()=>{ loading.style.display='none'; startScanning(); }, 700);
-}
-
-// ── Capture & enhance frame ────────────────────────────
-function capture(){
-  const W=cam.videoWidth, H=cam.videoHeight;
-  if(!W||!H) return null;
-  // Crop middle 85% width, middle 50% height
-  const cx=W*0.075, cy=H*0.20, cw=W*0.85, ch=H*0.50;
-  canvas.width=Math.floor(cw); canvas.height=Math.floor(ch);
-  ctx.drawImage(cam, cx,cy,cw,ch, 0,0,cw,ch);
-  // Grayscale + contrast boost for better OCR
-  const id=ctx.getImageData(0,0,canvas.width,canvas.height), d=id.data;
-  for(let i=0;i<d.length;i+=4){
-    const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-    const c=g>128?Math.min(255,g*1.4):Math.max(0,g*0.6);
-    d[i]=d[i+1]=d[i+2]=c;
-  }
-  ctx.putImageData(id,0,0);
-  return canvas;
-}
-
-// ── Check keywords in OCR text ─────────────────────────
-function check(text){
-  const lower=text.toLowerCase();
-  const matched=new Set();
-  const litPills=new Set();
-
-  KEYWORDS.forEach(kw=>{
-    if(lower.includes(kw.text)){
-      matched.add(kw.text);
-      litPills.add(kw.pill);
+    if(matchCount >= TOPIC_GROUP[topic].threshold && matchCount > bestMatchCount){
+      detected = true;
+      bestMatchCount = matchCount;
+      bestPills = TOPIC_GROUP[topic].keywords;
     }
-  });
+  }
 
-  // Update pill UI
+  // Reset pills
   document.querySelectorAll('.pill').forEach(p=>p.classList.remove('lit'));
-  litPills.forEach(id=>{ const el=document.getElementById(id); if(el)el.classList.add('lit'); });
 
-  return matched.size >= TRIGGER_COUNT;
+  // Light pills only if strong match found
+  if(detected){
+    if(bestPills.some(k=>k.includes("end"))) document.getElementById('p0')?.classList.add('lit');
+    if(bestPills.some(k=>k.includes("device"))) document.getElementById('p1')?.classList.add('lit');
+    if(bestPills.some(k=>k.includes("topology"))) document.getElementById('p2')?.classList.add('lit');
+    if(bestPills.some(k=>k.includes("flow"))) document.getElementById('p3')?.classList.add('lit');
+    if(bestPills.some(k=>k.includes("sdn"))) document.getElementById('p4')?.classList.add('lit');
+    if(bestPills.some(k=>k.includes("openflow"))) document.getElementById('p5')?.classList.add('lit');
+  }
+
+  return detected;
 }
+
 
 // ── Scan loop ──────────────────────────────────────────
 function startScanning(){
