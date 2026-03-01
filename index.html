@@ -158,7 +158,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   display:flex;align-items:center;justify-content:center;
 }
 
-/* ── Quiz Screen ── */
+#quiz-launch-btn{
+  width:100%;padding:11px;border-radius:12px;
+  background:linear-gradient(90deg,#4facfe22,#00e67622);
+  border:1.5px solid #4facfe;color:#4facfe;
+  font-size:0.85rem;font-weight:700;cursor:pointer;
+  letter-spacing:0.3px;transition:all 0.2s;
+}
+#quiz-launch-btn:active{background:linear-gradient(90deg,#4facfe44,#00e67644);}
+#quiz-launch-btn.highlight{
+  background:linear-gradient(90deg,#4facfe,#00e676);
+  color:#000;animation:pulse 1s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.8;}}
 #qscreen{
   display:none;position:fixed;inset:0;z-index:200;
   background:linear-gradient(160deg,#0a0a0f 0%,#0d1a2e 100%);
@@ -312,6 +324,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       <button class="ctrl-btn" onclick="skip(10)">10s ⏩</button>
       <button id="speed-btn" onclick="toggleSpeedMenu()">1× ▲</button>
     </div>
+    <button id="quiz-launch-btn" onclick="launchQuiz()">📝 Take Quiz</button>
   </div>
 </div>
 
@@ -575,6 +588,9 @@ function closeVid(){
   mvid.pause();
   vscreen.style.display='none';
   document.getElementById('top-controls').style.display='none';
+  const qBtn = document.getElementById('quiz-launch-btn');
+  qBtn.classList.remove('highlight');
+  qBtn.textContent='📝 Take Quiz';
   playing=false; cooldown=false; confirmCount=0;
   document.querySelectorAll('.pill').forEach(p=>p.classList.remove('lit'));
   confBar.style.width='0%';
@@ -628,14 +644,20 @@ mvid.addEventListener('timeupdate',()=>{
 
 mvid.addEventListener('ended',()=>{
   document.getElementById('btn-playpause').innerHTML='↩ Replay';
-  // Auto-show quiz after short delay
-  setTimeout(()=>{
-    vscreen.style.display='none';
-    document.getElementById('top-controls').style.display='none';
-    playing=false;
-    openQuiz();
-  }, 800);
+  // Highlight the quiz button and auto-open after delay
+  const qBtn = document.getElementById('quiz-launch-btn');
+  qBtn.classList.add('highlight');
+  qBtn.textContent = '📝 Quiz Time! Tap to Start';
+  setTimeout(()=>{ launchQuiz(); }, 1200);
 });
+
+function launchQuiz(){
+  vscreen.style.display='none';
+  document.getElementById('top-controls').style.display='none';
+  mvid.pause();
+  playing=false;
+  openQuiz();
+}
 
 // Seek on tap + drag scrub on progress bar
 const progWrap = document.getElementById('progress-wrap');
