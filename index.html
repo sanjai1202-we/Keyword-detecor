@@ -1,119 +1,221 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>SDN Scanner</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-  <style>
-    body { text-align:center; font-family: Arial; }
-    video { margin-top:20px; }
-    button, select { padding:8px; margin:5px; }
-  </style>
-</head>
-<body>
-
-<h2>Scan SDN Page</h2>
-
-<video id="camera" width="300" autoplay></video>
-<br>
-<button onclick="captureAndScan()">Scan Page</button>
-
-<br><br>
-
-<video id="videoPlayer" width="600">
-  <source id="videoSource" src="" type="video/mp4">
-</video>
-
-<br>
-<button onclick="playVideo()">Play</button>
-<button onclick="pauseVideo()">Pause</button>
-<button onclick="forward10()">+10s</button>
-
-<select onchange="changeSpeed(this.value)">
-  <option value="0.5">0.5x</option>
-  <option value="1" selected>1x</option>
-  <option value="1.5">1.5x</option>
-  <option value="2">2x</option>
-</select>
-
 <script>
+// ── Strong Keyword Grouping System ─────────────────────
 
-// 🎥 Start Camera
-const camera = document.getElementById("camera");
-
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-.then(stream => {
-  camera.srcObject = stream;
-});
-
-// 🎯 Strong Keyword Grouping
-const topics = {
+// Grouped topics with minimum 3 keyword match rule
+const TOPIC_GROUP = {
   sdn_controller: {
-    keywords: ["sdn", "controller", "northbound", "southbound", "openflow", "flow management", "topology", "device discovery"],
-    video: "sdn_controller.mp4"
+    keywords: [
+      "sdn",
+      "sdn controller",
+      "northbound",
+      "southbound",
+      "openflow",
+      "control plane"
+    ],
+    threshold: 3
+  },
+
+  discovery: {
+    keywords: [
+      "end-user",
+      "end user",
+      "device discovery",
+      "network device",
+      "laptops",
+      "routers",
+      "switches"
+    ],
+    threshold: 3
+  },
+
+  topology_flow: {
+    keywords: [
+      "topology",
+      "interconnection",
+      "flow management",
+      "flow entries",
+      "database",
+      "synchronization"
+    ],
+    threshold: 3
   }
 };
 
-const videoPlayer = document.getElementById("videoPlayer");
-const videoSource = document.getElementById("videoSource");
+// ── Elements ───────────────────────────────────────────
+const lbar   = document.getElementById('lbar');
+const lmsg   = document.getElementById('lmsg');
+const loading= document.getElementById('loading');
+const status = document.getElementById('status');
+const cam    = document.getElementById('camera');
+const canvas = document.getElementById('ocr-canvas');
+const ctx    = canvas.getContext('2d');
+const vscreen= document.getElementById('vscreen');
+const mvid   = document.getElementById('mvid');
 
-function captureAndScan() {
+let worker=null, scanLoop=null, busy=false, playing=false, cooldown=false;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = camera.videoWidth;
-  canvas.height = camera.videoHeight;
-
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(camera, 0, 0);
-
-  Tesseract.recognize(canvas, 'eng')
-  .then(result => {
-
-    let text = result.data.text.toLowerCase();
-    console.log("Scanned Text:", text);
-
-    detectTopic(text);
-
-  });
+// ── Step 1: Camera ─────────────────────────────────────
+async function startCam(){
+  lmsg.textContent='Requesting camera...'; lbar.style.width='15%';
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false
+    });
+    cam.srcObject = stream;
+    await new Promise(r=>{ cam.onloadedmetadata=r; });
+    lbar.style.width='35%'; lmsg.textContent='Camera ready ✅';
+    return true;
+  }catch(e){
+    lmsg.textContent='❌ Camera error: '+e.message;
+    return false;
+  }
 }
 
-function detectTopic(text) {
+// ── Step 2: Tesseract ──────────────────────────────────
+async function startOCR(){
+  lmsg.textContent='Loading OCR engine...'; lbar.style.width='45%';
+  try{
+    worker = await Tesseract.createWorker('eng',1,{
+      logger:m=>{
+        if(m.status==='loading tesseract core'){lbar.style.width='55%';lmsg.textContent='Loading core...';}
+        if(m.status==='loading language traineddata'){lbar.style.width='70%';lmsg.textContent='Loading English data...';}
+        if(m.status==='initialized api'){lbar.style.width='88%';lmsg.textContent='Almost ready...';}
+      }
+    });
+    await worker.setParameters({tessedit_pageseg_mode:'6'});
+    return true;
+  }catch(e){
+    lmsg.textContent='❌ OCR error: '+e.message; return false;
+  }
+}
 
-  let detectedTopic = null;
-  let highestMatch = 0;
+// ── Init ───────────────────────────────────────────────
+async function init(){
+  if(!await startCam()) return;
+  if(!await startOCR()) return;
+  lbar.style.width='100%'; lmsg.textContent='✅ Ready!';
+  setTimeout(()=>{ loading.style.display='none'; startScanning(); }, 700);
+}
 
-  for (let topic in topics) {
+// ── Capture & enhance frame ────────────────────────────
+function capture(){
+  const W=cam.videoWidth, H=cam.videoHeight;
+  if(!W||!H) return null;
+
+  const cx=W*0.075, cy=H*0.20, cw=W*0.85, ch=H*0.50;
+  canvas.width=Math.floor(cw); canvas.height=Math.floor(ch);
+  ctx.drawImage(cam, cx,cy,cw,ch, 0,0,cw,ch);
+
+  const id=ctx.getImageData(0,0,canvas.width,canvas.height), d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    const c=g>128?Math.min(255,g*1.4):Math.max(0,g*0.6);
+    d[i]=d[i+1]=d[i+2]=c;
+  }
+  ctx.putImageData(id,0,0);
+  return canvas;
+}
+
+// ── Strong Check Logic ─────────────────────────────────
+function check(text){
+
+  const lower = text.toLowerCase();
+  let detected = false;
+  let bestMatchCount = 0;
+  let matchedTopic = null;
+
+  for(let topic in TOPIC_GROUP){
 
     let matchCount = 0;
 
-    topics[topic].keywords.forEach(word => {
-      if (text.includes(word)) {
+    TOPIC_GROUP[topic].keywords.forEach(word=>{
+      if(lower.includes(word)){
         matchCount++;
       }
     });
 
-    if (matchCount >= 3 && matchCount > highestMatch) {
-      highestMatch = matchCount;
-      detectedTopic = topic;
+    if(matchCount >= TOPIC_GROUP[topic].threshold && matchCount > bestMatchCount){
+      bestMatchCount = matchCount;
+      matchedTopic = topic;
+      detected = true;
     }
   }
 
-  if (detectedTopic) {
-    videoSource.src = topics[detectedTopic].video;
-    videoPlayer.load();
-    videoPlayer.play();
-    alert("SDN Topic Detected!");
-  } else {
-    alert("No strong match detected.");
+  // Reset pills
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('lit'));
+
+  if(detected){
+    if(matchedTopic === "discovery"){
+      document.getElementById('p0')?.classList.add('lit');
+      document.getElementById('p1')?.classList.add('lit');
+    }
+    if(matchedTopic === "topology_flow"){
+      document.getElementById('p2')?.classList.add('lit');
+      document.getElementById('p3')?.classList.add('lit');
+    }
+    if(matchedTopic === "sdn_controller"){
+      document.getElementById('p4')?.classList.add('lit');
+      document.getElementById('p5')?.classList.add('lit');
+    }
   }
+
+  return detected;
 }
 
-// 🎮 Video Controls
-function playVideo() { videoPlayer.play(); }
-function pauseVideo() { videoPlayer.pause(); }
-function forward10() { videoPlayer.currentTime += 10; }
-function changeSpeed(speed) { videoPlayer.playbackRate = speed; }
+// ── Scan loop ──────────────────────────────────────────
+function startScanning(){
+  const run=async()=>{
+    if(busy||playing||cooldown) return;
+    busy=true;
+    status.textContent='🔍 Reading text...';
+    status.className='reading';
 
+    try{
+      const frame=capture();
+      if(frame){
+        const res=await worker.recognize(frame);
+        const text=res.data.text;
+
+        if(check(text)){
+          status.textContent='✅ Page detected!';
+          status.className='found';
+          cooldown=true;
+          setTimeout(playVid, 600);
+        } else {
+          status.textContent='📷 Point camera at textbook page';
+          status.className='';
+        }
+      }
+    }catch(e){ console.error(e); }
+
+    busy=false;
+  };
+
+  run();
+  scanLoop=setInterval(run, 2500);
+}
+
+// ── Video ──────────────────────────────────────────────
+function playVid(){
+  playing=true;
+  vscreen.style.display='flex';
+  mvid.currentTime=0;
+  mvid.play().catch(()=>{});
+}
+
+function closeVid(){
+  mvid.pause();
+  vscreen.style.display='none';
+  playing=false; cooldown=false;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('lit'));
+  status.textContent='📷 Point camera at textbook page';
+  status.className='';
+}
+
+function replayVid(){
+  mvid.currentTime=0;
+  mvid.play().catch(()=>{});
+}
+
+init();
 </script>
-
-</body>
-</html>
