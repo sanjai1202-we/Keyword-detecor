@@ -637,13 +637,26 @@ mvid.addEventListener('ended',()=>{
   }, 800);
 });
 
-// Seek on tap/click of progress bar
-document.getElementById('progress-wrap').addEventListener('click', e=>{
-  const bg=document.getElementById('progress-bg');
-  const rect=bg.getBoundingClientRect();
-  const pct=(e.clientX-rect.left)/rect.width;
-  if(mvid.duration) mvid.currentTime=pct*mvid.duration;
-});
+// Seek on tap + drag scrub on progress bar
+const progWrap = document.getElementById('progress-wrap');
+const progBg   = document.getElementById('progress-bg');
+let scrubbing  = false;
+
+function seekTo(clientX){
+  const rect = progBg.getBoundingClientRect();
+  const pct  = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  if(mvid.duration) mvid.currentTime = pct * mvid.duration;
+}
+
+// Mouse
+progWrap.addEventListener('mousedown',  e=>{ scrubbing=true; seekTo(e.clientX); });
+document.addEventListener('mousemove',  e=>{ if(scrubbing) seekTo(e.clientX); });
+document.addEventListener('mouseup',    ()=>{ scrubbing=false; });
+
+// Touch
+progWrap.addEventListener('touchstart', e=>{ scrubbing=true; seekTo(e.touches[0].clientX); }, {passive:true});
+document.addEventListener('touchmove',  e=>{ if(scrubbing) seekTo(e.touches[0].clientX); }, {passive:true});
+document.addEventListener('touchend',   ()=>{ scrubbing=false; });
 
 // Close speed menu on outside tap
 document.addEventListener('click', e=>{
